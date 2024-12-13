@@ -1,14 +1,48 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:bank_app/screens/account_view.dart';
+import 'package:bank_app/screens/second_screen.dart';
 
 class TransactionScreen extends StatefulWidget {
+  const TransactionScreen({super.key});
+
   @override
   State<TransactionScreen> createState() => _TransactionScreenState();
 }
 
 class _TransactionScreenState extends State<TransactionScreen> {
-  double amount = 0;
+  String userAccount = "";
+  double balance = 0.0;
+  bool isLoading = true;
+  Future<void> getAccount() async {
+    final db = FirebaseFirestore.instance;
+
+    try {
+      // Obtener datos de Firestore
+      final querySnapshot = await db.collection("accounts").get();
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        if (data["account"] == "00123456") {
+          setState(() {
+            userAccount = data["account"];
+            balance = data["amount"].toDouble();
+          });
+          break;
+        }
+      }
+    } catch (e) {
+      print("Error al obtener datos: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAccount(); // Llamar a la función al iniciar el widget
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,9 +51,18 @@ class _TransactionScreenState extends State<TransactionScreen> {
         title: const Text('Movimientos'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      backgroundColor: Colors.blue,
       body: Column(
         children: [
+          Text(
+            "Cuenta: $userAccount",
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text("Saldo: \$${balance.toStringAsFixed(2)}",
+              style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold)),
           Expanded(
             child: StreamBuilder(
               stream: getTransactionsStream(),
@@ -49,14 +92,6 @@ class _TransactionScreenState extends State<TransactionScreen> {
                         subtitle: Text('Fecha: ${transaction.date}'),
                         trailing:
                             Text('\$${transaction.amount.toStringAsFixed(2)}'),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AccountView(),
-                            ),
-                          );
-                        },
                       ),
                     );
                   },
@@ -66,13 +101,19 @@ class _TransactionScreenState extends State<TransactionScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await updateAccountBalance('00123456', amount);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => AccountView()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          SecondScreen())); // Actualiza el saldo con una cantidad
             },
             child: const Text(
-              'Actualizar saldo',
-              style: TextStyle(color: Color.fromARGB(255, 255, 0, 0)),
+              'Volver',
+              style: TextStyle(
+                color: Colors.blue,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -85,70 +126,24 @@ class _TransactionScreenState extends State<TransactionScreen> {
         .collection('transactions')
         .snapshots()
         .asyncMap((snapshot) async {
+      // Recorremos los documentos y aplicamos la lógica
       List<Transaction> transactions = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
 
-        if (data["submit"] == false) {
-          amount += data["amount"] ?? 0.0;
-        }
-
+        // Agregamos la transacción a la lista
         transactions.add(Transaction(
           receiver: data['receiver'],
           amount: data['amount'] ?? 0.0,
           sender: data['sender'],
           date: (data['date'] as Timestamp).toDate(),
-          submit: data['submit'],
         ));
       }
 
+      // Aquí puedes usar `totalAmount` si necesitas hacer algo con él fuera del bucle
+
       return transactions;
     });
-  }
-
-  Future<void> updateAccountBalance(String accountNumber, double amount) async {
-    try {
-      final accountQuery = await FirebaseFirestore.instance
-          .collection('accounts')
-          .where('account', isEqualTo: accountNumber)
-          .get();
-
-      if (accountQuery.docs.isNotEmpty) {
-        final accountDoc = accountQuery.docs.first;
-        final currentBalance = accountDoc.data()['amount'] ?? 0.0;
-
-        double totalPendingAmount = 0;
-
-        final transactionQuery = await FirebaseFirestore.instance
-            .collection('transactions')
-            .where('submit', isEqualTo: false)
-            .get();
-
-        for (var doc in transactionQuery.docs) {
-          final data = doc.data();
-          totalPendingAmount += data['amount'] ?? 0.0;
-
-          await FirebaseFirestore.instance
-              .collection('transactions')
-              .doc(doc.id)
-              .update({'submit': true});
-        }
-
-        await FirebaseFirestore.instance
-            .collection('accounts')
-            .doc(accountDoc.id)
-            .update({
-          'amount': currentBalance - totalPendingAmount,
-        });
-
-        print(
-            'Saldo actualizado exitosamente. Total procesado: $totalPendingAmount');
-      } else {
-        print('Cuenta no encontrada.');
-      }
-    } catch (e) {
-      print('Error al actualizar el saldo: $e');
-    }
   }
 }
 
@@ -157,13 +152,11 @@ class Transaction {
   final String sender;
   final String receiver;
   final DateTime date;
-  final bool submit;
 
   Transaction({
     required this.sender,
     required this.amount,
     required this.receiver,
     required this.date,
-    required this.submit,
   });
 }
