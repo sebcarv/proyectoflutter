@@ -12,29 +12,25 @@ class AccountView extends StatefulWidget {
 class _AccountViewState extends State<AccountView> {
   String userAccount = "";
   double balance = 0.0;
-  bool isLoading = true; // Indicador de carga
+  bool isLoading = true;
   Future<void> getAccount() async {
     final db = FirebaseFirestore.instance;
 
     try {
-      // Obtener datos de Firestore
       final querySnapshot = await db.collection("accounts").get();
       for (var doc in querySnapshot.docs) {
-        final data = doc
-            .data(); // Asegúrate de que sea un mapa// Verificar la estructura de los datos
+        final data = doc.data();
         if (data["account"] == "00123456") {
           setState(() {
             userAccount = data["account"];
-            balance =
-                data["amount"].toDouble(); // Convertir a double si es necesario
+            balance = data["amount"].toDouble();
           });
-          break; // Termina el loop si encuentras el documento
+          break;
         }
       }
     } catch (e) {
       print("Error al obtener datos: $e");
     } finally {
-      // Actualizar el estado después de obtener los datos
       setState(() {
         isLoading = false;
       });
@@ -44,7 +40,7 @@ class _AccountViewState extends State<AccountView> {
   @override
   void initState() {
     super.initState();
-    getAccount(); // Llamar a la función al iniciar el widget
+    getAccount();
   }
 
   @override

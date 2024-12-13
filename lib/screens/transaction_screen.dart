@@ -17,7 +17,6 @@ class _TransactionScreenState extends State<TransactionScreen> {
     final db = FirebaseFirestore.instance;
 
     try {
-      // Obtener datos de Firestore
       final querySnapshot = await db.collection("accounts").get();
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
@@ -41,7 +40,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
   @override
   void initState() {
     super.initState();
-    getAccount(); // Llamar a la función al iniciar el widget
+    getAccount();
   }
 
   @override
@@ -51,6 +50,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
         title: const Text('Movimientos'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
+      backgroundColor: Colors.blue,
       body: Column(
         children: [
           Text(
@@ -101,11 +101,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          SecondScreen())); // Actualiza el saldo con una cantidad
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => SecondScreen()));
             },
             child: const Text(
               'Volver',
@@ -126,12 +123,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
         .collection('transactions')
         .snapshots()
         .asyncMap((snapshot) async {
-      // Recorremos los documentos y aplicamos la lógica
       List<Transaction> transactions = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
 
-        // Agregamos la transacción a la lista
         transactions.add(Transaction(
           receiver: data['receiver'],
           amount: data['amount'] ?? 0.0,
@@ -139,8 +134,6 @@ class _TransactionScreenState extends State<TransactionScreen> {
           date: (data['date'] as Timestamp).toDate(),
         ));
       }
-
-      // Aquí puedes usar `totalAmount` si necesitas hacer algo con él fuera del bucle
 
       return transactions;
     });
