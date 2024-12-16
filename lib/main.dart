@@ -48,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (event.docs.isEmpty) {
         final account = <String, dynamic>{
           "account": "00123456",
-          "amount": 18000000
+          "amount": 180000000
         };
         db.collection("accounts").add(account);
       }

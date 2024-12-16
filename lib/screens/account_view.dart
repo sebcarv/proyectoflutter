@@ -67,22 +67,17 @@ class _AccountViewState extends State<AccountView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Mostrar cuenta y saldo
             Text(
               "Cuenta: $userAccount",
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-
             Text("Saldo: \$${balance.toStringAsFixed(2)}",
                 style: const TextStyle(
                     fontSize: 18,
                     color: Colors.red,
                     fontWeight: FontWeight.bold)),
-
             const SizedBox(height: 24),
-
-            // Formulario
             const Text(
               "Transferencia",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -107,12 +102,10 @@ class _TransferFormState extends State<TransferForm> {
   final TextEditingController _amountController = TextEditingController();
   double amountTransaction = 0;
 
-  // Método para guardar la transacción en Firestore
   Future<void> createTransaction(
       String emisor, String receptor, double amount) async {
     final db = FirebaseFirestore.instance;
 
-    // Crear el objeto de la transacción
     final transaction = {
       "sender": emisor,
       "receiver": receptor,
@@ -121,7 +114,6 @@ class _TransferFormState extends State<TransferForm> {
     };
 
     try {
-      // Guardar en la colección "transactions" en Firestore
       amountTransaction = amount;
       await db.collection("transactions").add(transaction);
       print("Transacción guardada exitosamente en Firestore.");
@@ -137,14 +129,12 @@ class _TransferFormState extends State<TransferForm> {
           .where('account', isEqualTo: account)
           .get();
       if (accountQuery.docs.isNotEmpty) {
-        // Suponemos que el atributo 'account' es único y tomamos el primer resultado
         final accountDoc = accountQuery.docs.first;
         final currentBalance = accountDoc.data()['amount'] ?? 0.0;
 
-        // Actualizar el saldo restando el monto calculado
         await FirebaseFirestore.instance
             .collection('accounts')
-            .doc(accountDoc.id) // ID del documento que contiene la cuenta
+            .doc(accountDoc.id)
             .update({
           'amount': currentBalance - balance,
         });
@@ -167,7 +157,6 @@ class _TransferFormState extends State<TransferForm> {
       key: _formKey,
       child: Column(
         children: [
-          // Campo: Cuenta de destino
           TextFormField(
             controller: _accountController,
             decoration: InputDecoration(
@@ -183,8 +172,6 @@ class _TransferFormState extends State<TransferForm> {
             },
           ),
           SizedBox(height: 16),
-
-          // Campo: Monto
           TextFormField(
             controller: _amountController,
             decoration: InputDecoration(
@@ -203,18 +190,14 @@ class _TransferFormState extends State<TransferForm> {
             },
           ),
           SizedBox(height: 24),
-
-          // Botón de transferencia
           ElevatedButton(
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 final account = _accountController.text;
                 final amount = double.parse(_amountController.text);
 
-                // Crear la transacción
                 await createTransaction("00123456", account, amount);
 
-                // Mostrar mensaje de éxito
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
